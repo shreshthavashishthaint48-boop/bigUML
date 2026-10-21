@@ -1,0 +1,48 @@
+// AUTO-GENERATED – DO NOT EDIT
+
+import { SetPropertyPaletteAction } from '@borkdominik-biguml/big-property-palette';
+<% if (it.needsGlspImport) { %>
+<% if (it.hasCreateOperations) { %>
+import { CreateNodeOperation, DeleteElementOperation } from '@eclipse-glsp/server';
+<% } else { %>
+import { DeleteElementOperation } from '@eclipse-glsp/server';
+<% } %>
+<% } %>
+import { type <%~ it.name %> } from '@borkdominik-biguml/uml-model-server/grammar';
+import { type GetPropertyPaletteHandlerContext, <%~ it.componentImports.join(', ') %> } from '@borkdominik-biguml/big-property-palette/glsp-server';
+
+export namespace <%~ it.name %>PropertyPaletteHandler {
+    export function getPropertyPalette(
+        context: GetPropertyPaletteHandlerContext<<%~ it.name %>><%~ it.sigExtras %>
+    ): SetPropertyPaletteAction[] {
+        return [
+            SetPropertyPaletteAction.create(
+                <PropertyPalette elementId={context.semanticElement.__id} label={(context.semanticElement as any).name ?? context.semanticElement.$type}>
+<% it.properties.forEach(function(prop) { %>
+<% if (prop.type === 'text') { %>
+                    <TextProperty elementId={context.semanticElement.__id} propertyId="<%~ prop.id %>" text={<%~ prop.valueExpr %>} label="<%~ prop.label %>" />
+<% } else if (prop.type === 'bool') { %>
+                    <BoolProperty elementId={context.semanticElement.__id} propertyId="<%~ prop.id %>" value={<%~ prop.valueExpr %>} label="<%~ prop.label %>" />
+<% } else if (prop.type === 'choice') { %>
+                    <ChoiceProperty
+                        elementId={context.semanticElement.__id}
+                        propertyId="<%~ prop.id %>"
+                        choices={<%~ prop.choicesExpr %>}
+                        choice={<%~ prop.choiceExpr %>}
+                        label="<%~ prop.label %>"
+                    />
+<% } else if (prop.type === 'reference') { %>
+                    <ReferenceProperty
+                        elementId={context.semanticElement.__id}
+                        propertyId="<%~ prop.id %>"
+                        label="<%~ prop.label %>"
+                        references={<%~ prop.referencesExpr %>}
+                        creates={<%~ prop.createsExpr %>}
+                    />
+<% } %>
+<% }) %>
+                </PropertyPalette>
+            )
+        ];
+    }
+}

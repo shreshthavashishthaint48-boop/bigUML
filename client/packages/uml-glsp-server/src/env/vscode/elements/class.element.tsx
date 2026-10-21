@@ -1,0 +1,94 @@
+/**********************************************************************************
+ * Copyright (c) 2023 borkdominik and others.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the MIT License which is available at https://opensource.org/licenses/MIT.
+ *
+ * SPDX-License-Identifier: MIT
+ **********************************************************************************/
+import { ClassDiagramNodeTypes } from '@borkdominik-biguml/uml-glsp-server';
+import { normalizeChildren, type GlspNode } from '@borkdominik-biguml/uml-glsp-server/jsx';
+import type { Class } from '@borkdominik-biguml/uml-model-server/grammar';
+import { type Dimension, type Point } from '@eclipse-glsp/protocol';
+import { GNode, type GModelElement } from '@eclipse-glsp/server';
+import type { ElementContext } from './core/element-context.js';
+import { CompartmentHeader, SectionCompartment } from './core/index.js';
+import { GOperationNodeElement } from './operation.element.js';
+import { GPropertyNodeElement } from './property.element.js';
+
+export class GClassNode extends GNode {
+    override type = ClassDiagramNodeTypes.CLASS;
+    override layout = 'vbox';
+    name: string = 'UNDEFINED CLASS NAME';
+    isAbstract: boolean = false;
+}
+
+export interface GClassNodeElementProps {
+    node: Class;
+    position?: Point;
+    size?: Dimension;
+    children?: GlspNode;
+}
+
+export function GClassNodeElement(props: GClassNodeElementProps): GModelElement {
+    const { node, position, size, children } = props;
+    const id = node.__id;
+
+    const classNode = new GClassNode();
+    classNode.id = id;
+    classNode.name = node.name;
+    classNode.isAbstract = node.isAbstract;
+    classNode.cssClasses = ['uml-node'];
+    classNode.children = [];
+
+    if (position) {
+        classNode.position = position;
+    }
+    if (size) {
+        classNode.size = size;
+        classNode.layoutOptions = { prefWidth: size.width, prefHeight: size.height };
+    }
+
+    // Header
+    const header = <CompartmentHeader id={id} name={node.name} isAbstract={node.isAbstract} />;
+    header.parent = classNode;
+    classNode.children.push(header);
+
+    // Children (properties/operations compartments injected from factory)
+    for (const child of normalizeChildren(children)) {
+        child.parent = classNode;
+        classNode.children.push(child);
+    }
+
+    return classNode;
+}
+
+export function createClassElement(ctx: ElementContext<Class>): GModelElement {
+    const position = ctx.modelIndex.findPosition(ctx.node.__id);
+    const size = ctx.modelIndex.findSize(ctx.node.__id);
+
+    const propertiesSection =
+        ctx.node.properties?.length > 0 ? (
+            <SectionCompartment id={ctx.node.__id + '_count_context_1'} dividerText='Attributes'>
+                {ctx.node.properties.map(p => (
+                    <GPropertyNodeElement node={p} />
+                ))}
+            </SectionCompartment>
+        ) : null;
+
+    const operationsSection =
+        ctx.node.operations?.length > 0 ? (
+            <SectionCompartment id={ctx.node.__id + '_count_context_3'} dividerText='Methods'>
+                {ctx.node.operations.map(o => (
+                    <GOperationNodeElement node={o} />
+                ))}
+            </SectionCompartment>
+        ) : null;
+
+    return (
+        <GClassNodeElement node={ctx.node} position={position} size={size}>
+            {propertiesSection}
+            {operationsSection}
+        </GClassNodeElement>
+    );
+}

@@ -1,0 +1,98 @@
+// AUTO-GENERATED – DO NOT EDIT
+/**********************************************************************************
+ * Copyright (c) 2025 borkdominik and others.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the MIT License which is available at https://opensource.org/licenses/MIT.
+ *
+ * SPDX-License-Identifier: MIT
+ **********************************************************************************/
+
+import { DefaultTypes } from '@eclipse-glsp/server';
+<% const hasTemplates = it.nodes.some(e => e.template) || it.edges.some(e => e.template); %>
+<% if (hasTemplates) { %>
+import { representationTemplateTypeId, representationTypeId } from '../../../env/common/model/model-type-utils.js';
+<% } else { %>
+import { representationTypeId } from '../../../env/common/model/model-type-utils.js';
+<% } %>
+import { AstTypeUtils } from '../../../env/common/model/model-type-utils.js';
+
+<% /* ------------------------------------------------------------------ */ %>
+<% /* Node Types                                                         */ %>
+<% /* ------------------------------------------------------------------ */ %>
+export namespace <%~ it.diagramName %>DiagramNodeTypes {
+<% it.nodes.forEach(function(entry) { %>
+<% if (entry.template) { %>
+    export const <%~ entry.constName %> = representationTemplateTypeId('<%~ it.representation %>', DefaultTypes.NODE, '<%~ entry.template %>', '<%~ entry.astName %>');
+<% } else { %>
+    export const <%~ entry.constName %> = representationTypeId('<%~ it.representation %>', DefaultTypes.NODE, '<%~ entry.astName %>');
+<% } %>
+<% }) %>
+}
+
+<% /* ------------------------------------------------------------------ */ %>
+<% /* Edge Types                                                         */ %>
+<% /* ------------------------------------------------------------------ */ %>
+export namespace <%~ it.diagramName %>DiagramEdgeTypes {
+<% it.edges.forEach(function(entry) { %>
+<% if (entry.template) { %>
+    export const <%~ entry.constName %> = representationTemplateTypeId('<%~ it.representation %>', DefaultTypes.EDGE, '<%~ entry.template %>', '<%~ entry.astName %>');
+<% } else { %>
+    export const <%~ entry.constName %> = representationTypeId('<%~ it.representation %>', DefaultTypes.EDGE, '<%~ entry.astName %>');
+<% } %>
+<% }) %>
+}
+
+<% /* ------------------------------------------------------------------ */ %>
+<% /* Backwards-compatible merged namespace                              */ %>
+<% /* ------------------------------------------------------------------ */ %>
+export namespace <%~ it.diagramName %>DiagramModelTypes {
+    // re-export nodes
+<% it.nodes.forEach(function(entry) { %>
+    export const <%~ entry.constName %> = <%~ it.diagramName %>DiagramNodeTypes.<%~ entry.constName %>;
+<% }) %>
+
+    // re-export edges
+<% it.edges.forEach(function(entry) { %>
+    export const <%~ entry.constName %> = <%~ it.diagramName %>DiagramEdgeTypes.<%~ entry.constName %>;
+<% }) %>
+}
+
+<% /* ------------------------------------------------------------------ */ %>
+<% /* AST type conversion                                                */ %>
+<% /* ------------------------------------------------------------------ */ %>
+export namespace <%~ it.diagramName %>AstTypes {
+<% if (it.astAliases.length > 0) { %>
+    const aliases: Record<string, string> = {
+<% it.astAliases.forEach(function(alias) { %>
+        [<%~ it.diagramName %>DiagramModelTypes.<%~ alias.constName %>]: '<%~ alias.astName %>',
+<% }) %>
+    };
+<% } %>
+
+    const typeMap: Record<string, string> = {
+<% it.nodes.forEach(function(entry) { %>
+        '<%~ entry.astName %>': <%~ it.diagramName %>DiagramModelTypes.<%~ entry.constName %>,
+<% }) %>
+<% it.edges.forEach(function(entry) { %>
+        '<%~ entry.astName %>': <%~ it.diagramName %>DiagramModelTypes.<%~ entry.constName %>,
+<% }) %>
+    };
+
+    export function convertToAst(elementId: string): string {
+<% if (it.astAliases.length > 0) { %>
+        if (aliases[elementId]) {
+            return aliases[elementId];
+        }
+<% } %>
+        return AstTypeUtils.stripPrefix(elementId);
+    }
+
+    export function convertToElementType(astType: string): string {
+        const elementType = typeMap[astType];
+        if (!elementType) {
+            throw new Error(`[<%~ it.diagramName %>AstTypes] No element type found for AST type '${astType}'`);
+        }
+        return elementType;
+    }
+}
